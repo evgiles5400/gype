@@ -1,0 +1,35 @@
+import React, { useState } from 'react';
+import GameBoard from './components/GameBoard';
+import PlayerTray from './components/PlayerTray';
+import Sidebar from './components/Sidebar';
+import Controls from './components/Controls';
+
+const App: React.FC = () => {
+    const [board, setBoard] = useState<Array<Array<string | null>>>(Array(8).fill(Array(8).fill(null)));
+    const [log, setLog] = useState<string[]>(['Game Started!']);
+    const [playerPieces, setPlayerPieces] = useState<string[]>(['Flame', 'Book', 'Tree', 'Hat']);
+
+    const handleMove = (from: [number, number], to: [number, number]) => {
+        // Handle movement logic here
+        setLog((prev) => [...prev, `Moved from ${from} to ${to}`]);
+    };
+
+    const handleRoll = () => {
+        setLog((prev) => [...prev, 'Dice rolled!']);
+    };
+
+    const handleEndTurn = () => {
+        setLog((prev) => [...prev, 'Turn ended!']);
+    };
+
+    return (
+        <div className="app">
+            <Sidebar log={log} />
+            <GameBoard board={board} onMove={handleMove} />
+            <PlayerTray pieces={playerPieces} playerName="Player 1" />
+            <Controls onRoll={handleRoll} onEndTurn={handleEndTurn} />
+        </div>
+    );
+};
+
+export default App;

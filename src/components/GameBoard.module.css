@@ -1,0 +1,28 @@
+.game-board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr); /* 8 equal columns */
+    grid-template-rows: repeat(8, 1fr);   /* 8 equal rows */
+    gap: 2px;
+    background-color: #8b5e34;
+    padding: 10px;
+    border: 4px solid #4a2f1b;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 600px; /* Optional: Restrict board size */
+    aspect-ratio: 1; /* Ensures the board is square */
+}
+
+.board-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.light-cell {
+    background-color: #f0d9b5; /* Light square color */
+}
+
+.dark-cell {
+    background-color: #b58863; /* Dark square color */
+}
