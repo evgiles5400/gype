@@ -2,23 +2,26 @@ import React from 'react';
 import styles from './GameBoard.module.css';
 
 type GameBoardProps = {
-    board: Array<Array<string | null>>; // 2D array representing the board state
-    onMove: (from: [number, number], to: [number, number]) => void;
+    board: Array<Array<string | null>>;
+    onPlacePiece: (row: number, col: number) => void; // Callback for placing a piece
+    rotationClass?: string; // Add rotationClass as an optional string prop
 };
 
-const GameBoard: React.FC<GameBoardProps> = ({ board, onMove }) => {
-    const getCellClass = (row: number, col: number) => {
-        return (row + col) % 2 === 0 ? styles['light-cell'] : styles['dark-cell'];
-    };
-
+const GameBoard: React.FC<GameBoardProps> = ({ board, onPlacePiece, rotationClass }) => {
     return (
-        <div className={styles['game-board']}>
+        <div className={`${styles['game-board']} ${rotationClass ? styles[rotationClass] : ''}`}>
             {board.map((row, rowIndex) =>
                 row.map((cell, colIndex) => (
                     <div
                         key={`${rowIndex}-${colIndex}`}
-                        className={`${styles['board-cell']} ${getCellClass(rowIndex, colIndex)}`}
-                        onClick={() => onMove([rowIndex, colIndex], [rowIndex, colIndex])}
+                        className={`${styles['board-cell']} ${
+                            cell === null ? styles['empty-cell'] : styles['occupied-cell']
+                        }`}
+                        onClick={() => {
+                            if (cell === null) {
+                                onPlacePiece(rowIndex, colIndex);
+                            }
+                        }}
                     >
                         {cell && <span>{cell}</span>}
                     </div>
@@ -27,6 +30,5 @@ const GameBoard: React.FC<GameBoardProps> = ({ board, onMove }) => {
         </div>
     );
 };
-
 
 export default GameBoard;

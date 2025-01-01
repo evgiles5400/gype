@@ -1,23 +1,35 @@
 .game-board {
     display: grid;
-    grid-template-columns: repeat(8, 1fr); /* 8 equal columns */
-    grid-template-rows: repeat(8, 1fr);   /* 8 equal rows */
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
     gap: 2px;
     background-color: #8b5e34;
     padding: 10px;
     border: 4px solid #4a2f1b;
     border-radius: 8px;
     width: 100%;
-    max-width: 600px; /* Optional: Restrict board size */
-    aspect-ratio: 1; /* Ensures the board is square */
+    max-width: 600px;
+    aspect-ratio: 1;
+    transform: rotate(0deg); /* Default rotation */
+    transition: transform 0.5s ease; /* Smooth rotation */
 }
 
-.board-cell {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
+.rotate-0 {
+    transform: rotate(0deg);
 }
+
+.rotate-90 {
+    transform: rotate(90deg);
+}
+
+.rotate-180 {
+    transform: rotate(180deg);
+}
+
+.rotate-270 {
+    transform: rotate(270deg);
+}
+
 
 .light-cell {
     background-color: #f0d9b5; /* Light square color */
@@ -25,4 +37,21 @@
 
 .dark-cell {
     background-color: #b58863; /* Dark square color */
+}
+
+.board-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border: 1px solid #4a2f1b;
+}
+
+.empty-cell {
+    background-color: #f0d9b5;
+}
+
+.occupied-cell {
+    background-color: #b58863;
+    cursor: not-allowed;
 }

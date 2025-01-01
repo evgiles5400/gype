@@ -18,8 +18,15 @@
 
 .tray-piece {
     cursor: grab;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    margin: 2px;
 }
 
 .tray-piece:active {
     cursor: grabbing;
+}
+
+.tray-piece.selected {
+    border-color: gold;
 }

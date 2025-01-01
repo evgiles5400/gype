@@ -14,64 +14,15 @@ const App: React.FC = () => {
     const [players, setPlayers] = useState<Player[]>([]); // Players array
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
     const [log, setLog] = useState(['Game started!']);
+    const [selectedPiece, setSelectedPiece] = useState<string | null>(null);
+    const [gamePhase, setGamePhase] = useState<'arranging' | 'gameplay'>('arranging');
+
 
     const mockBoard: Array<Array<string | null>> = Array(8)
         .fill(null)
         .map(() => Array(8).fill(null));
 
     const [board, setBoard] = useState(mockBoard);
-
-    const [selectedPiece, setSelectedPiece] = useState<string | null>(null);
-
-    const handlePlacePiece = (row: number, col: number) => {
-        if (selectedPiece === null) {
-            setLog((prev) => [...prev, 'No piece selected!']);
-            return;
-        }
-
-        const updatedBoard = board.map((row) => row.slice());
-        updatedBoard[row][col] = selectedPiece;
-        setBoard(updatedBoard);
-
-        // Remove piece from player's tray
-        setPlayers((prevPlayers) =>
-            prevPlayers.map((player, index) =>
-                index === currentPlayerIndex
-                    ? { ...player, tray: player.tray.filter((p) => p !== selectedPiece) }
-                    : player
-            )
-        );
-
-        setLog((prev) => [...prev, `Placed ${selectedPiece} at [${row}, ${col}]`]);
-        setSelectedPiece(null); // Clear selection
-    };
-
-
-    return (
-        <div>
-            {/* GameBoard */}
-            <GameBoard board={board} onPlacePiece={handlePlacePiece} />
-
-            {/* PlayerTray */}
-            <PlayerTray
-                tray={players[currentPlayerIndex]?.tray || []}
-                playerName={players[currentPlayerIndex]?.name || ''}
-                color={players[currentPlayerIndex]?.color || ''}
-                onSelectPiece={(piece) => setSelectedPiece(piece)}
-            />
-        </div>
-    );
-    
-    // Handle tray rearrangement
-    const handleRearrange = (newTray: string[]) => {
-        setPlayers((prevPlayers) =>
-            prevPlayers.map((player, index) =>
-                index === currentPlayerIndex
-                    ? { ...player, tray: newTray }
-                    : player
-            )
-        );
-    };
 
     // Tray validation function
     const validateTray = (tray: string[]) => {
@@ -98,12 +49,22 @@ const App: React.FC = () => {
     const initializePlayers = (num: number) => {
         const defaultTray = ['Sword', 'Sword', 'Tree', 'Tree', 'Book', 'Book', 'Flame', 'Flame'];
         const colors = ['red', 'blue', 'green', 'orange'];
-        const newPlayers = Array.from({ length: num }, (_, index) => ({
+        const newPlayers: Player[] = Array.from({ length: num }, (_, index) => ({
             name: `Player ${index + 1}`,
             tray: [...defaultTray],
             color: colors[index],
         }));
         setPlayers(newPlayers);
+    };
+
+    const handleRearrange = (newTray: string[]) => {
+        setPlayers((prevPlayers) =>
+            prevPlayers.map((player, index) =>
+                index === currentPlayerIndex
+                    ? { ...player, tray: newTray }
+                    : player
+            )
+        );
     };
 
     const handleStartGame = () => {
@@ -121,11 +82,48 @@ const App: React.FC = () => {
     };
 
     const handleEndTurn = () => {
-        setLog((prev) => [
-            ...prev,
-            `${players[currentPlayerIndex].name} finished their turn.`,
-        ]);
-        setCurrentPlayerIndex((prevIndex) => (prevIndex + 1) % players.length); // Cycle to the next player
+        if (gamePhase === 'arranging') {
+            if (currentPlayerIndex === players.length - 1) {
+                setGamePhase('gameplay');
+                setCurrentPlayerIndex(0); // Reset to the first player
+                setLog((prev) => [...prev, 'All players have arranged their trays. Gameplay begins!']);
+            } else {
+                setCurrentPlayerIndex((prevIndex) => prevIndex + 1);
+                setLog((prev) => [...prev, `${players[currentPlayerIndex].name} finished arranging their tray.`]);
+            }
+        } else {
+            setLog((prev) => [...prev, `${players[currentPlayerIndex].name} finished their turn.`]);
+            setCurrentPlayerIndex((prevIndex) => (prevIndex + 1) % players.length); // Cycle to the next player
+        }
+    };
+    
+
+    const handlePlacePiece = (row: number, col: number) => {
+        if (selectedPiece === null) {
+            setLog((prev) => [...prev, 'No piece selected!']);
+            return;
+        }
+
+        if (board[row][col] !== null) {
+            setLog((prev) => [...prev, 'Cell is occupied!']);
+            return;
+        }
+
+        const updatedBoard = board.map((row) => row.slice());
+        updatedBoard[row][col] = selectedPiece;
+        setBoard(updatedBoard);
+
+        // Remove piece from the player's tray
+        setPlayers((prevPlayers) =>
+            prevPlayers.map((player, index) =>
+                index === currentPlayerIndex
+                    ? { ...player, tray: player.tray.filter((_, i) => i !== player.tray.indexOf(selectedPiece)) }
+                    : player
+            )
+        );
+
+        setLog((prev) => [...prev, `${players[currentPlayerIndex].name} placed ${selectedPiece} at (${row}, ${col}).`]);
+        setSelectedPiece(null); // Clear selection after placing
     };
 
     if (numPlayers === null) {
@@ -166,11 +164,24 @@ const App: React.FC = () => {
         );
     }
 
+    const getBoardRotationClass = () => {
+        switch (currentPlayerIndex) {
+            case 1:
+                return 'rotate-90';
+            case 2:
+                return 'rotate-180';
+            case 3:
+                return 'rotate-270';
+            default:
+                return 'rotate-0';
+        }
+    };
+
     return (
         <div
             style={{
                 display: 'grid',
-                gridTemplateColumns: '275px 1fr',
+                gridTemplateColumns: '300px auto',
                 gridTemplateRows: '1fr auto',
                 height: '100vh',
                 gap: '10px',
@@ -182,6 +193,17 @@ const App: React.FC = () => {
             <div style={{ gridColumn: '1 / 2', gridRow: '1 / 3' }}>
                 <Sidebar log={log} />
             </div>
+
+            {gamePhase === 'arranging' ? (
+                <p style={{ textAlign: 'center', margin: '10px' }}>
+                    {players[currentPlayerIndex]?.name}, arrange your tray and click "End Turn" when ready.
+                </p>
+            ) : (
+                <p style={{ textAlign: 'center', margin: '10px' }}>
+                    {players[currentPlayerIndex]?.name}, select a piece and make your move.
+                </p>
+            )}
+
 
             {/* GameBoard */}
             <div
@@ -195,33 +217,20 @@ const App: React.FC = () => {
             >
                 <GameBoard
                     board={board}
-                    onMove={(from, to) => {
-                        const [fromRow, fromCol] = from;
-                        const [toRow, toCol] = to;
-
-                        if (board[toRow][toCol] !== null) {
-                            setLog((prev) => [...prev, `Invalid move. Destination is occupied.`]);
-                            return;
-                        }
-
-                        const updatedBoard = board.map((row) => row.slice());
-                        updatedBoard[toRow][toCol] = updatedBoard[fromRow][fromCol];
-                        updatedBoard[fromRow][fromCol] = null;
-
-                        setBoard(updatedBoard);
-                        setLog((prev) => [...prev, `Moved from ${from} to ${to}`]);
-                    }}
-                />
-            </div>
+                    onPlacePiece={handlePlacePiece}
+                    rotationClass={getBoardRotationClass()} // Pass the rotation class
+                />            </div>
 
             {/* PlayerTray */}
             <div style={{ gridColumn: '2 / 3', gridRow: '2 / 3' }}>
-                <PlayerTray
-                    tray={players[currentPlayerIndex]?.tray || []}
-                    playerName={players[currentPlayerIndex]?.name || ''}
-                    color={players[currentPlayerIndex]?.color || ''}
-                    onRearrange={handleRearrange}
-                />
+            <PlayerTray
+                tray={players[currentPlayerIndex]?.tray || []}
+                playerName={players[currentPlayerIndex]?.name || ''}
+                color={players[currentPlayerIndex]?.color || ''}
+                onSelectPiece={(piece) => setSelectedPiece(piece)}
+                onRearrange={handleRearrange}
+            />
+
                 <button
                     onClick={handleStartGame}
                     style={{

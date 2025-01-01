@@ -6,11 +6,12 @@ type PlayerTrayProps = {
     tray: string[];
     playerName: string;
     color: string;
-    onSelectPiece: (piece: string | null) => void; // Callback to pass selected piece
+    onSelectPiece: (piece: string | null) => void;
+    onRearrange?: (newTray: string[]) => void;
 };
 
-const PlayerTray: React.FC<PlayerTrayProps> = ({ tray, playerName, color, onSelectPiece }) => {
-    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+const PlayerTray: React.FC<PlayerTrayProps> = ({ tray, playerName, color, onSelectPiece, onRearrange }) => {
+    const [selectedIndex, setSelectedIndex] = useState<number | null>(null); // Add state for selected piece
 
     const handleSelect = (index: number) => {
         if (selectedIndex === index) {
@@ -19,6 +20,20 @@ const PlayerTray: React.FC<PlayerTrayProps> = ({ tray, playerName, color, onSele
         } else {
             setSelectedIndex(index); // Select new piece
             onSelectPiece(tray[index]);
+        }
+    };
+
+    const handleDragStart = (index: number) => {
+        setSelectedIndex(index); // Clear selection when starting a drag
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        e.preventDefault();
+        if (onRearrange) {
+            const newTray = [...tray];
+            const draggedItem = newTray.splice(selectedIndex!, 1)[0];
+            newTray.splice(index, 0, draggedItem);
+            onRearrange(newTray);
         }
     };
 
@@ -34,7 +49,10 @@ const PlayerTray: React.FC<PlayerTrayProps> = ({ tray, playerName, color, onSele
                         className={`${styles['tray-piece']} ${
                             selectedIndex === index ? styles['selected'] : ''
                         }`}
+                        draggable
                         onClick={() => handleSelect(index)}
+                        onDragStart={() => handleDragStart(index)}
+                        onDragOver={(e) => handleDragOver(e, index)}
                     >
                         <Dice value={piece} color={color} />
                     </div>
