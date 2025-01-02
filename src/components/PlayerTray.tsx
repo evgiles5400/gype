@@ -8,9 +8,10 @@ type PlayerTrayProps = {
     color: string;
     onSelectPiece: (piece: string | null) => void;
     onRearrange?: (newTray: string[]) => void; // Optional callback for rearrangement
+    gamePhase: 'arranging' | 'gameplay';
 };
 
-const PlayerTray: React.FC<PlayerTrayProps> = ({ tray, playerName, color, onSelectPiece, onRearrange }) => {
+const PlayerTray: React.FC<PlayerTrayProps> = ({ tray, playerName, color, onSelectPiece, onRearrange, gamePhase }) => {
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null); // Add draggedIndex state
     let lastDraggedIndex: number | null = null; // Local variable to reduce redundant updates
@@ -30,6 +31,7 @@ const PlayerTray: React.FC<PlayerTrayProps> = ({ tray, playerName, color, onSele
     };
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        if (gamePhase !== 'arranging') return; // Disable drag in gameplay phase
         e.preventDefault();
         if (draggedIndex === null || draggedIndex === index || lastDraggedIndex === index) return;
 
