@@ -23,6 +23,8 @@ const App: React.FC = () => {
         .map(() => Array(8).fill(null));
 
     const [board, setBoard] = useState(mockBoard);
+    const [hasPlacedPiece, setHasPlacedPiece] = useState(false);
+
 
     // Tray validation function
     const validateTray = (tray: string[]) => {
@@ -84,36 +86,28 @@ const App: React.FC = () => {
     const handleEndTurn = () => {
         if (gamePhase === 'arranging') {
             if (currentPlayerIndex === players.length - 1) {
-                setGamePhase('gameplay');
-                setCurrentPlayerIndex(0); // Reset to the first player
-                setLog((prev) => [...prev, 'All players have arranged their trays. Gameplay begins!']);
+                setGamePhase('gameplay'); // Transition to gameplay after the last player finishes arranging
+                setCurrentPlayerIndex(0); // Reset to Player 1
+                setLog((prev) => [...prev, 'All players have finished arranging their dice. Gameplay begins!']);
             } else {
-                setCurrentPlayerIndex((prevIndex) => prevIndex + 1);
-                setLog((prev) => [...prev, `${players[currentPlayerIndex].name} finished arranging their tray.`]);
+                setCurrentPlayerIndex((prevIndex) => prevIndex + 1); // Move to the next player
+                setLog((prev) => [...prev, `${players[currentPlayerIndex].name} finished arranging their dice.`]);
             }
         } else {
             setLog((prev) => [...prev, `${players[currentPlayerIndex].name} finished their turn.`]);
             setCurrentPlayerIndex((prevIndex) => (prevIndex + 1) % players.length); // Cycle to the next player
+            setHasPlacedPiece(false); // Reset for the next turn
         }
-    };
+    };  
     
 
     const handlePlacePiece = (row: number, col: number) => {
-        if (selectedPiece === null) {
-            setLog((prev) => [...prev, 'No piece selected!']);
-            return;
-        }
-
-        if (board[row][col] !== null) {
-            setLog((prev) => [...prev, 'Cell is occupied!']);
-            return;
-        }
-
-        const updatedBoard = board.map((row) => row.slice());
-        updatedBoard[row][col] = selectedPiece;
+        if (!selectedPiece || hasPlacedPiece) return;
+    
+        const updatedBoard = board.map((r) => r.slice());
+        updatedBoard[row][col] = selectedPiece; // Place the die
         setBoard(updatedBoard);
-
-        // Remove piece from the player's tray
+    
         setPlayers((prevPlayers) =>
             prevPlayers.map((player, index) =>
                 index === currentPlayerIndex
@@ -121,10 +115,58 @@ const App: React.FC = () => {
                     : player
             )
         );
-
-        setLog((prev) => [...prev, `${players[currentPlayerIndex].name} placed ${selectedPiece} at (${row}, ${col}).`]);
-        setSelectedPiece(null); // Clear selection after placing
+    
+        setSelectedPiece(null); // Clear the selected die
+        setValidCells([]); // Clear highlights
+        setHasPlacedPiece(true); // Mark the die as placed
     };
+    
+
+    const getValidPlacementCells = (
+        die: string,
+        board: Array<Array<string | null>>,
+        currentPlayerIndex: number
+    ): Array<[number, number]> => {
+        const validCells: Array<[number, number]> = [];
+    
+        if (currentPlayerIndex === 0) {
+            // Player 1 (south to north)
+            board[7].forEach((cell, colIndex) => {
+                if (cell === null) validCells.push([7, colIndex]);
+            });
+        } else if (currentPlayerIndex === 1) {
+            // Player 2 (north to south)
+            board[0].forEach((cell, colIndex) => {
+                if (cell === null) validCells.push([0, colIndex]);
+            });
+        } else if (currentPlayerIndex === 2) {
+            // Player 3 (east to west)
+            board.forEach((row, rowIndex) => {
+                if (row[7] === null) validCells.push([rowIndex, 7]);
+            });
+        } else if (currentPlayerIndex === 3) {
+            // Player 4 (west to east)
+            board.forEach((row, rowIndex) => {
+                if (row[0] === null) validCells.push([rowIndex, 0]);
+            });
+        }
+    
+        return validCells;
+    };    
+       
+
+    const [validCells, setValidCells] = useState<Array<[number, number]>>([]);
+
+    const handleSelectPiece = (piece: string | null) => {
+        setSelectedPiece(piece);
+
+        if (piece) {
+            setValidCells(getValidPlacementCells(piece, board, currentPlayerIndex));
+        } else {
+            setValidCells([]); // Clear highlights if no piece is selected
+        }
+    };
+
 
     if (numPlayers === null) {
         return (
@@ -164,18 +206,16 @@ const App: React.FC = () => {
         );
     }
 
-    const getBoardRotationClass = () => {
+    const getBoardRotationClass = (currentPlayerIndex: number) => {
         switch (currentPlayerIndex) {
-            case 1:
-                return 'rotate-90';
-            case 2:
-                return 'rotate-180';
-            case 3:
-                return 'rotate-270';
-            default:
-                return 'rotate-0';
+            case 0: return 'rotate-0'; // Player 1: South (no rotation)
+            case 1: return 'rotate-180'; // Player 2: North
+            case 2: return 'rotate-90'; // Player 3: East
+            case 3: return 'rotate-270'; // Player 4: West
+            default: return 'rotate-0';
         }
     };
+    
 
     return (
         <div
@@ -218,7 +258,8 @@ const App: React.FC = () => {
                 <GameBoard
                     board={board}
                     onPlacePiece={handlePlacePiece}
-                    rotationClass={getBoardRotationClass()} // Pass the rotation class
+                    validCells={validCells} // Pass valid cells to highlight
+                    rotationClass={getBoardRotationClass(currentPlayerIndex)} // Pass the rotation class
                 />            </div>
 
             {/* PlayerTray */}
@@ -227,7 +268,7 @@ const App: React.FC = () => {
                 tray={players[currentPlayerIndex]?.tray || []}
                 playerName={players[currentPlayerIndex]?.name || ''}
                 color={players[currentPlayerIndex]?.color || ''}
-                onSelectPiece={(piece) => setSelectedPiece(piece)}
+                onSelectPiece={handleSelectPiece} // Pass handleSelectPiece here
                 onRearrange={handleRearrange}
             />
 

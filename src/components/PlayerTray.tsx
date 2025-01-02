@@ -7,11 +7,13 @@ type PlayerTrayProps = {
     playerName: string;
     color: string;
     onSelectPiece: (piece: string | null) => void;
-    onRearrange?: (newTray: string[]) => void;
+    onRearrange?: (newTray: string[]) => void; // Optional callback for rearrangement
 };
 
 const PlayerTray: React.FC<PlayerTrayProps> = ({ tray, playerName, color, onSelectPiece, onRearrange }) => {
-    const [selectedIndex, setSelectedIndex] = useState<number | null>(null); // Add state for selected piece
+    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null); // Add draggedIndex state
+    let lastDraggedIndex: number | null = null; // Local variable to reduce redundant updates
 
     const handleSelect = (index: number) => {
         if (selectedIndex === index) {
@@ -24,17 +26,23 @@ const PlayerTray: React.FC<PlayerTrayProps> = ({ tray, playerName, color, onSele
     };
 
     const handleDragStart = (index: number) => {
-        setSelectedIndex(index); // Clear selection when starting a drag
+        setDraggedIndex(index); // Set the dragged index
     };
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
         e.preventDefault();
+        if (draggedIndex === null || draggedIndex === index || lastDraggedIndex === index) return;
+
+        const newTray = [...tray];
+        const [draggedItem] = newTray.splice(draggedIndex, 1);
+        newTray.splice(index, 0, draggedItem);
+
         if (onRearrange) {
-            const newTray = [...tray];
-            const draggedItem = newTray.splice(selectedIndex!, 1)[0];
-            newTray.splice(index, 0, draggedItem);
-            onRearrange(newTray);
+            onRearrange(newTray); // Notify the parent of the new tray order
         }
+
+        setDraggedIndex(index); // Update the dragged index
+        lastDraggedIndex = index; // Avoid redundant updates
     };
 
     return (
